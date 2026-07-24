@@ -2,7 +2,7 @@
 #  Vtiger CRM 8.4.0  –  Imagen base Gobo Tecnología
 #  PHP 8.3 + Apache 2.4 (Debian Bookworm)
 # ==============================================================
-FROM php:8.3-apache
+FROM php:8.3-apache-bookworm
 
 LABEL maintainer="Gobo Tecnología S.A.S <soporte@gobo.com.co>"
 LABEL org.opencontainers.image.source="https://github.com/Gobo-soporte/vtiger-Vgobo"

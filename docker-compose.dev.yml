@@ -1,0 +1,61 @@
+# ==============================================================
+#  Desarrollo local – Gobo Tecnología
+#  Uso: docker compose -f docker-compose.dev.yml up --build
+#  El código se monta en vivo → editas en VS Code, recargas el browser
+# ==============================================================
+
+services:
+  vtiger:
+    build: .
+    container_name: migracioncrm-dev
+    ports: ["8080:80"]
+    environment:
+      - VTIGER_DB_HOST=db
+      - VTIGER_DB_USER=vtiger_app
+      - VTIGER_DB_PASSWORD=dev_password_123
+      - VTIGER_DB_NAME=crm_migracion_dev
+    volumes:
+      # Código en vivo para desarrollo (NO usar en producción)
+      - ./custom/layouts:/var/www/html/layouts/v7:cached
+      - ./custom/modules:/var/www/html/modules:cached
+      # Datos persistentes
+      - dev_storage:/var/www/html/storage
+      - dev_privileges:/var/www/html/test/user_privileges
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mariadb:11.8
+    container_name: migracioncrm-db-dev
+    ports: ["3307:3306"]
+    environment:
+      - MARIADB_ROOT_PASSWORD=dev_root_123
+      - MARIADB_DATABASE=crm_migracion_dev
+      - MARIADB_USER=vtiger_app
+      - MARIADB_PASSWORD=dev_password_123
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --lower-case-table-names=0
+      - --local-infile=ON
+      - --sql-mode=NO_ENGINE_SUBSTITUTION
+    volumes:
+      - dev_db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 20s
+
+  adminer:
+    image: adminer:latest
+    container_name: migracioncrm-adminer-dev
+    ports: ["8081:8080"]
+    depends_on: [db]
+
+volumes:
+  dev_db:
+  dev_storage:
+  dev_privileges:

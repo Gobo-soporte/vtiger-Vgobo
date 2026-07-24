@@ -1,0 +1,8 @@
+# Nunca subir el tar de Vtiger a Git (es ~110MB)
+# Descárgalo manualmente o usa Git LFS
+vtigercrm-8.4.0.tar.gz
+
+# Entorno local
+.env
+.env.local
+docker-compose.override.yml

@@ -5,24 +5,25 @@
 FROM php:8.3-apache
 
 LABEL maintainer="Gobo Tecnología S.A.S <soporte@gobo.com.co>"
-LABEL org.opencontainers.image.source="https://github.com/soportegobo26/vtiger-Vgobo"
+LABEL org.opencontainers.image.source="https://github.com/Gobo-soporte/vtiger-Vgobo"
 
 # ── 1. Extensiones PHP requeridas por Vtiger 8.4 ────────────────
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        libc-client-dev libkrb5-dev libpng-dev libjpeg62-turbo-dev \
-        libfreetype6-dev libxml2-dev libzip-dev libonig-dev \
-        libldap2-dev libcurl4-openssl-dev zlib1g-dev \
-        cron unzip wget mariadb-client \
+    libc-client-dev libkrb5-dev libpng-dev libjpeg62-turbo-dev \
+    libfreetype6-dev libxml2-dev libzip-dev libonig-dev \
+    libldap2-dev libcurl4-openssl-dev zlib1g-dev \
+    libicu-dev \
+    cron unzip wget default-mysql-client \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-configure imap --with-kerberos --with-imap-ssl \
     && docker-php-ext-install -j$(nproc) \
-        mysqli pdo_mysql gd imap curl xml zip \
-        mbstring bcmath intl ldap opcache \
+    mysqli pdo_mysql gd imap xml zip \
+    mbstring bcmath intl ldap opcache \
     && pecl install apcu && docker-php-ext-enable apcu \
     && apt-get purge -y --auto-remove libc-client-dev libkrb5-dev \
-        libpng-dev libjpeg62-turbo-dev libfreetype6-dev \
-        libxml2-dev libzip-dev libonig-dev libldap2-dev \
-        libcurl4-openssl-dev zlib1g-dev \
+    libpng-dev libjpeg62-turbo-dev libfreetype6-dev \
+    libxml2-dev libzip-dev libonig-dev libldap2-dev \
+    libcurl4-openssl-dev zlib1g-dev libicu-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # ── 2. Configuración PHP optimizada ────────────────────────────
@@ -39,7 +40,7 @@ RUN { \
     echo "error_reporting = E_WARNING & ~E_NOTICE"; \
     echo "short_open_tag = Off"; \
     echo "default_charset = UTF-8"; \
-} > /usr/local/etc/php/conf.d/vtiger.ini
+    } > /usr/local/etc/php/conf.d/vtiger.ini
 
 # ── 3. Configuración OPcache ───────────────────────────────────
 RUN { \
@@ -49,7 +50,7 @@ RUN { \
     echo "opcache.max_accelerated_files=10000"; \
     echo "opcache.validate_timestamps=0"; \
     echo "opcache.revalidate_freq=0"; \
-} > /usr/local/etc/php/conf.d/opcache.ini
+    } > /usr/local/etc/php/conf.d/opcache.ini
 
 # ── 4. Apache: mod_rewrite + headers X-Forwarded (Traefik) ────
 RUN a2enmod rewrite headers
@@ -63,7 +64,7 @@ RUN { \
     echo '    # Confiar en Traefik para HTTPS'; \
     echo '    SetEnvIf X-Forwarded-Proto "https" HTTPS=on'; \
     echo '</VirtualHost>'; \
-} > /etc/apache2/sites-available/000-default.conf
+    } > /etc/apache2/sites-available/000-default.conf
 
 # ── 5. Descargar e instalar Vtiger 8.4.0 ──────────────────────
 #    Se descarga durante el build — no necesitas el .tar.gz en el repo

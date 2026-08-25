@@ -24,7 +24,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && docker-php-ext-configure imap --with-kerberos --with-imap-ssl \
     && docker-php-ext-install -j$(nproc) \
     mysqli pdo_mysql gd imap xml zip \
-    mbstring bcmath intl ldap opcache \
+    mbstring bcmath intl ldap opcache exif soap curl \
     && pecl install apcu && docker-php-ext-enable apcu \
     && apt-get purge -y --auto-remove \
     libc-client-dev libkrb5-dev libpng-dev libjpeg62-turbo-dev \

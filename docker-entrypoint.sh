@@ -28,6 +28,7 @@ chown -R www-data:www-data /var/www/html/cache \
     /var/www/html/test \
     /var/www/html/user_privileges \
     /var/www/html/config.inc.php
+
 chmod 666 /var/www/html/config.inc.php
 chmod -R 775 /var/www/html/cache \
     /var/www/html/logs \
@@ -38,7 +39,19 @@ chmod -R 775 /var/www/html/cache \
 
 echo -e "${GREEN}[GOBO] Directorios listos.${NC}"
 
-# ── 2. Esperar a que MariaDB esté lista ────────────────────────
+
+# ── 2. Configurar e iniciar CRON de Vtiger ─────────────────────
+echo -e "${YELLOW}[GOBO] Configurando Cron...${NC}"
+# Inyecta la tarea cron para el usuario www-data si no existe ya
+if ! crontab -u www-data -l 2>/dev/null | grep -q "vtigercron.php"; then
+    (crontab -u www-data -l 2>/dev/null; echo "*/5 * * * * /usr/local/bin/php -f /var/www/html/vtigercron.php > /dev/null 2>&1") | crontab -u www-data -
+fi
+# Inicia el demonio de cron en segundo plano (instalado previamente en tu Dockerfile)
+service cron start
+echo -e "${GREEN}[GOBO] Cron iniciado.${NC}"
+
+
+# ── 3. Esperar a que MariaDB esté lista ────────────────────────
 if [ -n "$VTIGER_DB_HOST" ]; then
     echo -e "${YELLOW}[GOBO] Esperando a MariaDB en ${VTIGER_DB_HOST}...${NC}"
     MAX_TRIES=30
@@ -55,7 +68,8 @@ if [ -n "$VTIGER_DB_HOST" ]; then
     echo -e "${GREEN}[GOBO] MariaDB lista.${NC}"
 fi
 
-# ── 3. Ejecutar migraciones SQL idempotentes ───────────────────
+
+# ── 4. Ejecutar migraciones SQL idempotentes ───────────────────
 MIGRATIONS_DIR="/opt/gobo/migrations"
 if [ -d "$MIGRATIONS_DIR" ] && [ -n "$VTIGER_DB_HOST" ]; then
     # Solo ejecutar si ya hay install.lock (Vtiger ya instalado)
@@ -71,7 +85,11 @@ if [ -d "$MIGRATIONS_DIR" ] && [ -n "$VTIGER_DB_HOST" ]; then
 EOSQL
 
         APPLIED=0
-        for SQL_FILE in $(ls "$MIGRATIONS_DIR"/*.sql 2>/dev/null | sort); do
+        # CORRECCIÓN: Uso de glob seguro en bash en lugar de 'ls' para evitar exit code 2 si no hay archivos
+        for SQL_FILE in "$MIGRATIONS_DIR"/*.sql; do
+            # Si no hay coincidencias, el bucle recibe el literal "*.sql". Esta línea lo salta.
+            [ -e "$SQL_FILE" ] || continue
+            
             BASENAME=$(basename "$SQL_FILE")
             ALREADY=$(mariadb -h"$VTIGER_DB_HOST" -u"$VTIGER_DB_USER" -p"$VTIGER_DB_PASSWORD" \
                 "$VTIGER_DB_NAME" -N -e \

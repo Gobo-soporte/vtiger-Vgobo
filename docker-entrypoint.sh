@@ -21,13 +21,9 @@ if [ ! -f /var/www/html/config.inc.php ]; then
     echo -e "${YELLOW}[GOBO] config.inc.php creado.${NC}"
 fi
 
-# Permisos correctos
-chown -R www-data:www-data /var/www/html/cache \
-    /var/www/html/logs \
-    /var/www/html/storage \
-    /var/www/html/test \
-    /var/www/html/user_privileges \
-    /var/www/html/config.inc.php
+# Asignar permisos completos a toda la raíz HTML de forma recursiva
+# Esto evita el bug donde Vtiger falla al sobrescribir archivos post-instalación
+chown -R www-data:www-data /var/www/html
 
 chmod 666 /var/www/html/config.inc.php
 chmod -R 775 /var/www/html/cache \
@@ -46,7 +42,7 @@ echo -e "${YELLOW}[GOBO] Configurando Cron...${NC}"
 if ! crontab -u www-data -l 2>/dev/null | grep -q "vtigercron.php"; then
     (crontab -u www-data -l 2>/dev/null; echo "*/5 * * * * /usr/local/bin/php -f /var/www/html/vtigercron.php > /dev/null 2>&1") | crontab -u www-data -
 fi
-# Inicia el demonio de cron en segundo plano (instalado previamente en tu Dockerfile)
+# Inicia el demonio de cron en segundo plano
 service cron start
 echo -e "${GREEN}[GOBO] Cron iniciado.${NC}"
 
@@ -85,7 +81,7 @@ if [ -d "$MIGRATIONS_DIR" ] && [ -n "$VTIGER_DB_HOST" ]; then
 EOSQL
 
         APPLIED=0
-        # CORRECCIÓN: Uso de glob seguro en bash en lugar de 'ls' para evitar exit code 2 si no hay archivos
+        # Uso de glob seguro en bash
         for SQL_FILE in "$MIGRATIONS_DIR"/*.sql; do
             # Si no hay coincidencias, el bucle recibe el literal "*.sql". Esta línea lo salta.
             [ -e "$SQL_FILE" ] || continue

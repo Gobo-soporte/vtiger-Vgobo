@@ -49,13 +49,15 @@ RUN { \
     } > /usr/local/etc/php/conf.d/vtiger.ini
 
 # ── 4. Configuración OPcache ──────────────────────────────────
+# validate_timestamps en 1 es vital para que reconozca los cambios
+# en el archivo config.inc.php durante el asistente de instalación.
 RUN { \
     echo "opcache.enable=1"; \
     echo "opcache.memory_consumption=256"; \
     echo "opcache.interned_strings_buffer=16"; \
     echo "opcache.max_accelerated_files=10000"; \
-    echo "opcache.validate_timestamps=0"; \
-    echo "opcache.revalidate_freq=0"; \
+    echo "opcache.validate_timestamps=1"; \
+    echo "opcache.revalidate_freq=2"; \
     } > /usr/local/etc/php/conf.d/opcache.ini
 
 # ── 5. Apache: mod_rewrite + headers X-Forwarded (Traefik) ────

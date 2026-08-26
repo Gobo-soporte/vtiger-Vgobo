@@ -42,9 +42,20 @@ echo -e "${YELLOW}[GOBO] Configurando Cron...${NC}"
 if ! crontab -u www-data -l 2>/dev/null | grep -q "vtigercron.php"; then
     (crontab -u www-data -l 2>/dev/null; echo "*/5 * * * * /usr/local/bin/php -f /var/www/html/vtigercron.php > /dev/null 2>&1") | crontab -u www-data -
 fi
+
+# Auto-sanación de permisos: repara archivos que Filebrowser (u otro
+# contenedor externo montando el mismo volumen) haya guardado con un
+# UID/GID distinto a www-data mientras Vtiger ya estaba corriendo.
+# El chown del paso 1 solo corre una vez al boot; esto lo repite cada
+# 5 min sin necesidad de reiniciar el contenedor. Va en el crontab de
+# root (no el de www-data) porque chown requiere privilegios.
+if ! crontab -l 2>/dev/null | grep -q "gobo-fix-perms"; then
+    (crontab -l 2>/dev/null; echo "*/5 * * * * chown -R www-data:www-data /var/www/html # gobo-fix-perms") | crontab -
+fi
+
 # Inicia el demonio de cron en segundo plano
 service cron start
-echo -e "${GREEN}[GOBO] Cron iniciado.${NC}"
+echo -e "${GREEN}[GOBO] Cron iniciado (vtigercron + auto-fix de permisos).${NC}"
 
 
 # ── 3. Esperar a que MariaDB esté lista ────────────────────────
@@ -85,7 +96,7 @@ EOSQL
         for SQL_FILE in "$MIGRATIONS_DIR"/*.sql; do
             # Si no hay coincidencias, el bucle recibe el literal "*.sql". Esta línea lo salta.
             [ -e "$SQL_FILE" ] || continue
-            
+
             BASENAME=$(basename "$SQL_FILE")
             ALREADY=$(mariadb -h"$VTIGER_DB_HOST" -u"$VTIGER_DB_USER" -p"$VTIGER_DB_PASSWORD" \
                 "$VTIGER_DB_NAME" -N -e \

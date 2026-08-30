@@ -32,6 +32,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libldap2-dev libcurl4-openssl-dev zlib1g-dev libicu-dev \
     && rm -rf /var/lib/apt/lists/*
 
+# ── 2.1. Instalar ionCube Loader para PHP 8.3 ─────────────────
+RUN cd /tmp \
+    && wget -q https://downloads.ioncube.com/loader_downloads/ioncube_loaders_lin_x86-64.tar.gz \
+    && tar -xzf ioncube_loaders_lin_x86-64.tar.gz \
+    && EXT_DIR=$(php -r 'echo ini_get("extension_dir");') \
+    && cp ioncube/ioncube_loader_lin_8.3.so $EXT_DIR/ \
+    && echo "zend_extension = $EXT_DIR/ioncube_loader_lin_8.3.so" > /usr/local/etc/php/conf.d/00-ioncube.ini \
+    && rm -rf /tmp/ioncube*
+
 # ── 3. Configuración PHP optimizada ───────────────────────────
 RUN { \
     echo "upload_max_filesize = 50M"; \
@@ -49,8 +58,6 @@ RUN { \
     } > /usr/local/etc/php/conf.d/vtiger.ini
 
 # ── 4. Configuración OPcache ──────────────────────────────────
-# validate_timestamps en 1 es vital para que reconozca los cambios
-# en el archivo config.inc.php durante el asistente de instalación.
 RUN { \
     echo "opcache.enable=1"; \
     echo "opcache.memory_consumption=256"; \

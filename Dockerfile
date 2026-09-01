@@ -109,7 +109,12 @@ COPY migrations/ /opt/gobo/migrations/
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-VOLUME ["/var/www/html/storage", "/var/www/html/test/user_privileges"]
+# NOTA (30-ago-2026): se removió "/var/www/html/storage" de esta declaración.
+# La imagen forzaba un volumen anónimo ahí en cada recreación del contenedor,
+# tapando la carpeta real de adjuntos (~36GB) montada vía el volumen de
+# /var/www/html. "storage" ya queda cubierto como subcarpeta normal del
+# volumen de la app — no necesita su propia entrada VOLUME.
+VOLUME ["/var/www/html/test/user_privileges"]
 EXPOSE 80
 ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["apache2-foreground"]

@@ -1,8 +1,8 @@
 # ==============================================================
 #  Vtiger CRM 8.4.0  –  Imagen base Gobo Tecnología
-#  PHP 8.3 + Apache 2.4 (Debian Bookworm)
+#  PHP 8.3.36 + Apache 2.4 (Debian Bookworm)
 # ==============================================================
-FROM php:8.3-apache-bookworm
+FROM php:8.3.36-apache-bookworm
 
 LABEL maintainer="Gobo Tecnología S.A.S <soporte@gobo.com.co>"
 LABEL org.opencontainers.image.source="https://github.com/Gobo-soporte/vtiger-Vgobo"
@@ -92,7 +92,6 @@ RUN mkdir -p /var/www/html/cache/images \
     /var/www/html/cache/import \
     /var/www/html/logs \
     /var/www/html/storage \
-    /var/www/html/test/user_privileges \
     /var/www/html/user_privileges \
     && touch /var/www/html/config.inc.php \
     && chown -R www-data:www-data /var/www/html \
@@ -109,12 +108,9 @@ COPY migrations/ /opt/gobo/migrations/
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# NOTA (30-ago-2026): se removió "/var/www/html/storage" de esta declaración.
-# La imagen forzaba un volumen anónimo ahí en cada recreación del contenedor,
-# tapando la carpeta real de adjuntos (~36GB) montada vía el volumen de
-# /var/www/html. "storage" ya queda cubierto como subcarpeta normal del
-# volumen de la app — no necesita su propia entrada VOLUME.
-VOLUME ["/var/www/html/test/user_privileges"]
+# NOTA: Al igual que se hizo con "storage", se eliminó la directiva VOLUME
+# para evitar que Docker cree volúmenes anónimos indeseados al recrear contenedores.
+# La persistencia se gestiona limpiamente mediante docker-compose.
 EXPOSE 80
 ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["apache2-foreground"]
